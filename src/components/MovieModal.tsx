@@ -1,6 +1,7 @@
 "use client";
 
 import { Movie } from "@/types/movie";
+import { useState } from "react";
 
 interface MovieModalProps {
   movie: Movie;
@@ -8,8 +9,20 @@ interface MovieModalProps {
 }
 
 export function MovieModal({ movie, onClose }: MovieModalProps) {
+  const [imageError, setImageError] = useState(false);
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    // Only close if clicking the backdrop (not the modal content)
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
@@ -38,11 +51,20 @@ export function MovieModal({ movie, onClose }: MovieModalProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="relative aspect-[2/3] w-full">
-              <img
-                src={movie.poster}
-                alt={`${movie.title} poster`}
-                className="rounded-lg object-cover w-full h-full"
-              />
+              {imageError ? (
+                <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <p className="text-gray-500 dark:text-gray-400 text-center p-4">
+                    No image available
+                  </p>
+                </div>
+              ) : (
+                <img
+                  src={movie.poster}
+                  alt={`${movie.title} poster`}
+                  className="rounded-lg object-cover w-full h-full"
+                  onError={() => setImageError(true)}
+                />
+              )}
             </div>
 
             <div className="space-y-4">
