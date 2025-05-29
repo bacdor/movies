@@ -1,19 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { MovieAPI } from '@/lib/api';
+import { NextRequest, NextResponse } from "next/server";
+import { MovieService } from "@/lib/server/movieService";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const genres = await MovieAPI.getGenres();
-    
-    return NextResponse.json({
-      genres,
-      total: genres.length
-    });
+    const genres = await MovieService.getGenres();
+    return NextResponse.json(genres);
   } catch (error) {
-    console.error('Error fetching genres:', error);
+    console.error("Error fetching genres:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch genres' },
+      { error: "Failed to fetch genres" },
       { status: 500 }
     );
   }
-} 
+}
