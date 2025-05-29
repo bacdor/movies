@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { MovieAPI } from "@/lib/api";
-import { Movie } from "@/types/movie";
+import { Movie, SearchFilters } from "@/types/movie";
 import { MovieCard } from "@/components/MovieCard";
+import { SearchBar } from "@/components/SearchBar";
+import { MovieModal } from "@/components/MovieModal";
+import { FilterPanel } from "@/components/FilterPanel";
 
 interface ApiResponse<T> {
   movies: T[];
@@ -24,11 +27,13 @@ export default function MovieApp() {
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<number[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [genres, setGenres] = useState<string[]>([]);
 
-  // Load initial movies and favorites on component mount
+  // Load initial movies, favorites, and genres on component mount
   useEffect(() => {
     loadInitialMovies();
     loadFavorites();
+    loadGenres();
   }, []);
 
   // Load favorites from localStorage
@@ -45,6 +50,16 @@ export default function MovieApp() {
     setFavorites(newFavorites);
   };
 
+  // Load genres
+  const loadGenres = async () => {
+    try {
+      const genresList = await MovieAPI.getGenres();
+      setGenres(genresList);
+    } catch (error) {
+      console.error("Error loading genres:", error);
+    }
+  };
+
   // Load initial movies (popular ones)
   const loadInitialMovies = async () => {
     try {
@@ -58,19 +73,29 @@ export default function MovieApp() {
     }
   };
 
-  // Handle search
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) {
-      loadInitialMovies();
-      return;
-    }
-
+  // Handle search and filters together
+  const handleSearchAndFilters = async (
+    query: string,
+    filters: Partial<SearchFilters> = {}
+  ) => {
     try {
       setLoading(true);
-      const response = await MovieAPI.searchMovies({ query });
+      let response;
+
+      if (query.trim()) {
+        // If there's a search query, use the search endpoint
+        response = await MovieAPI.searchMovies({ query });
+      } else if (Object.keys(filters).length > 0) {
+        // If there are filters but no search query, use the main endpoint
+        response = await MovieAPI.searchMovies(filters);
+      } else {
+        // If no search or filters, load popular movies
+        response = await MovieAPI.getPopularMovies(20);
+      }
+
       setMovies(response.movies);
     } catch (error) {
-      console.error("Error searching movies:", error);
+      console.error("Error searching/filtering movies:", error);
     } finally {
       setLoading(false);
     }
@@ -79,11 +104,16 @@ export default function MovieApp() {
   // Handle search input change with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      handleSearch(searchQuery);
+      handleSearchAndFilters(searchQuery);
     }, 300);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // Handle filter changes
+  const handleFilterChange = async (filters: Partial<SearchFilters>) => {
+    handleSearchAndFilters(searchQuery, filters);
+  };
 
   // Handle favorite toggle
   const handleFavoriteToggle = (movieId: number) => {
@@ -91,11 +121,6 @@ export default function MovieApp() {
       ? favorites.filter((id) => id !== movieId)
       : [...favorites, movieId];
     saveFavorites(newFavorites);
-  };
-
-  // Handle movie click
-  const handleMovieClick = (movie: Movie) => {
-    setSelectedMovie(movie);
   };
 
   return (
@@ -111,17 +136,17 @@ export default function MovieApp() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Section */}
-        <div className="mb-8">
-          <div className="max-w-md mx-auto">
-            <input
-              type="text"
-              placeholder="Search movies, directors, or cast..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          </div>
+        {/* Search and Filters */}
+        <div className="space-y-4">
+          <SearchBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
+          <FilterPanel
+            onFilterChange={handleFilterChange}
+            genres={genres}
+            disabled={!!searchQuery.trim()} // Disable filters when searching
+          />
         </div>
 
         {/* Loading State */}
@@ -140,7 +165,7 @@ export default function MovieApp() {
             <MovieCard
               key={movie.id}
               movie={movie}
-              onMovieClick={handleMovieClick}
+              onMovieClick={setSelectedMovie}
               onFavoriteToggle={handleFavoriteToggle}
               isFavorite={favorites.includes(movie.id)}
             />
@@ -157,121 +182,10 @@ export default function MovieApp() {
 
       {/* Movie Detail Modal */}
       {selectedMovie && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {selectedMovie.title}
-                </h2>
-                <button
-                  onClick={() => setSelectedMovie(null)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="relative aspect-[2/3] w-full">
-                  <img
-                    src={selectedMovie.poster}
-                    alt={`${selectedMovie.title} poster`}
-                    className="rounded-lg object-cover w-full h-full"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Details
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      {selectedMovie.description}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Info
-                    </h3>
-                    <dl className="grid grid-cols-2 gap-2 text-sm">
-                      <dt className="text-gray-500 dark:text-gray-400">Year</dt>
-                      <dd className="text-gray-900 dark:text-white">
-                        {selectedMovie.year}
-                      </dd>
-
-                      <dt className="text-gray-500 dark:text-gray-400">
-                        Director
-                      </dt>
-                      <dd className="text-gray-900 dark:text-white">
-                        {selectedMovie.director}
-                      </dd>
-
-                      <dt className="text-gray-500 dark:text-gray-400">
-                        Runtime
-                      </dt>
-                      <dd className="text-gray-900 dark:text-white">
-                        {selectedMovie.runtime} minutes
-                      </dd>
-
-                      <dt className="text-gray-500 dark:text-gray-400">
-                        Rating
-                      </dt>
-                      <dd className="text-gray-900 dark:text-white">
-                        {selectedMovie.rating.toFixed(1)}
-                      </dd>
-                    </dl>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Genres
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedMovie.genre.map((genre) => (
-                        <span
-                          key={genre}
-                          className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-sm"
-                        >
-                          {genre}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Cast
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedMovie.cast.map((actor) => (
-                        <span
-                          key={actor}
-                          className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-full text-sm"
-                        >
-                          {actor}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+        />
       )}
     </div>
   );
