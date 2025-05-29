@@ -7,6 +7,7 @@ import { MovieCard } from "@/components/MovieCard";
 import { SearchBar } from "@/components/SearchBar";
 import { MovieModal } from "@/components/MovieModal";
 import { FilterPanel } from "@/components/FilterPanel";
+import { SortPanel } from "@/components/SortPanel";
 
 interface ApiResponse<T> {
   movies: T[];
@@ -28,6 +29,18 @@ export default function MovieApp() {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [genres, setGenres] = useState<string[]>([]);
+  const [currentFilters, setCurrentFilters] = useState<
+    Pick<SearchFilters, "genre" | "year">
+  >({
+    genre: "all",
+    year: "all",
+  });
+  const [currentSort, setCurrentSort] = useState<
+    Pick<SearchFilters, "sortBy" | "sortOrder">
+  >({
+    sortBy: "rating",
+    sortOrder: "desc",
+  });
 
   // Load initial movies, favorites, and genres on component mount
   useEffect(() => {
@@ -66,6 +79,9 @@ export default function MovieApp() {
       setLoading(true);
       const response = await MovieAPI.getPopularMovies(20);
       setMovies(response.movies);
+      // Reset filters when loading initial movies
+      setCurrentFilters({ genre: "all", year: "all" });
+      setCurrentSort({ sortBy: "rating", sortOrder: "desc" });
     } catch (error) {
       console.error("Error loading movies:", error);
     } finally {
@@ -73,46 +89,62 @@ export default function MovieApp() {
     }
   };
 
-  // Handle search and filters together
-  const handleSearchAndFilters = async (
-    query: string,
-    filters: Partial<SearchFilters> = {}
-  ) => {
+  // Handle search with current filters and sort
+  const handleSearch = async () => {
     try {
       setLoading(true);
       let response;
 
-      if (query.trim()) {
-        // If there's a search query, use the search endpoint
-        response = await MovieAPI.searchMovies({ query });
-      } else if (Object.keys(filters).length > 0) {
-        // If there are filters but no search query, use the main endpoint
-        response = await MovieAPI.searchMovies(filters);
+      // If there's a search query, only use that
+      if (searchQuery.trim()) {
+        response = await MovieAPI.searchMovies({ query: searchQuery.trim() });
       } else {
-        // If no search or filters, load popular movies
-        response = await MovieAPI.getPopularMovies(20);
+        // If no search query, use filters and sort
+        const searchParams = {
+          ...(currentFilters.genre !== "all" && {
+            genre: currentFilters.genre,
+          }),
+          ...(currentFilters.year !== "all" && { year: currentFilters.year }),
+          ...currentSort,
+        };
+
+        // If we have any filter parameters, use the search endpoint
+        if (Object.keys(searchParams).length > 0) {
+          response = await MovieAPI.searchMovies(searchParams);
+        } else {
+          // If no filters, load popular movies
+          response = await MovieAPI.getPopularMovies(20);
+        }
       }
 
       setMovies(response.movies);
     } catch (error) {
-      console.error("Error searching/filtering movies:", error);
+      console.error("Error searching movies:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle search input change with debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      handleSearchAndFilters(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
   // Handle filter changes
-  const handleFilterChange = async (filters: Partial<SearchFilters>) => {
-    handleSearchAndFilters(searchQuery, filters);
+  const handleFilterChange = (
+    filters: Pick<SearchFilters, "genre" | "year">
+  ) => {
+    setCurrentFilters(filters);
+  };
+
+  // Handle sort changes
+  const handleSortChange = (
+    sortOptions: Pick<SearchFilters, "sortBy" | "sortOrder">
+  ) => {
+    setCurrentSort(sortOptions);
+  };
+
+  // Handle clear search and filters
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setCurrentFilters({ genre: "all", year: "all" });
+    setCurrentSort({ sortBy: "rating", sortOrder: "desc" });
+    loadInitialMovies();
   };
 
   // Handle favorite toggle
@@ -141,12 +173,46 @@ export default function MovieApp() {
           <SearchBar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            onSearch={handleSearch}
+            isLoading={loading}
+            placeholder="Search movies by title, director, or cast..."
           />
-          <FilterPanel
-            onFilterChange={handleFilterChange}
-            genres={genres}
-            disabled={!!searchQuery.trim()} // Disable filters when searching
-          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <FilterPanel
+              onFilterChange={handleFilterChange}
+              genres={genres}
+              currentFilters={currentFilters}
+              disabled={!!searchQuery.trim()}
+            />
+            <SortPanel
+              onSortChange={handleSortChange}
+              currentSort={currentSort}
+              disabled={!!searchQuery.trim()}
+            />
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleClearSearch}
+              className="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white
+                       flex items-center gap-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Clear All
+            </button>
+          </div>
         </div>
 
         {/* Loading State */}
@@ -160,7 +226,7 @@ export default function MovieApp() {
         )}
 
         {/* Movies Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-8">
           {movies.map((movie) => (
             <MovieCard
               key={movie.id}
@@ -173,7 +239,7 @@ export default function MovieApp() {
           {movies.length === 0 && !loading && (
             <div className="col-span-full text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 text-lg">
-                No movies found. Try searching for something!
+                No movies found. Try adjusting your search or filters!
               </p>
             </div>
           )}
@@ -210,7 +276,11 @@ TODO: Create these components in src/components/:
    - Props: onFilterChange, filters
    - Features: genre dropdown, year range, sort options
 
-5. FavoritesList.tsx - Display favorite movies
+5. SortPanel.tsx - Sorting options
+   - Props: onSortChange, currentSort
+   - Features: sort options
+
+6. FavoritesList.tsx - Display favorite movies
    - Props: favoriteMovies, onMovieClick
    - Features: list of favorited movies
 

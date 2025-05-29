@@ -2,94 +2,81 @@
 
 import { SearchFilters } from "@/types/movie";
 
-interface FilterPanelProps {
-  onFilterChange: (filters: Pick<SearchFilters, "genre" | "year">) => void;
-  genres: string[];
-  currentFilters: Pick<SearchFilters, "genre" | "year">;
+interface SortPanelProps {
+  onSortChange: (
+    sortOptions: Pick<SearchFilters, "sortBy" | "sortOrder">
+  ) => void;
+  currentSort: Pick<SearchFilters, "sortBy" | "sortOrder">;
   disabled?: boolean;
 }
 
-export function FilterPanel({
-  onFilterChange,
-  genres,
-  currentFilters,
+export function SortPanel({
+  onSortChange,
+  currentSort,
   disabled = false,
-}: FilterPanelProps) {
-  const handleFilterChange = (field: "genre" | "year", value: string) => {
+}: SortPanelProps) {
+  const handleSortChange = (field: "sortBy" | "sortOrder", value: string) => {
     if (disabled) return;
-    onFilterChange({
-      ...currentFilters,
+    onSortChange({
+      ...currentSort,
       [field]: value,
     });
   };
 
-  // Generate year options (from current year down to 1950)
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 1949 }, (_, i) =>
-    (currentYear - i).toString()
-  );
-
   const selectClassName = `px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md
     bg-white dark:bg-gray-700 text-gray-900 dark:text-white
     focus:ring-2 focus:ring-blue-500 focus:border-transparent
-    text-sm min-w-[120px]
+    text-sm
     ${disabled ? "opacity-50 cursor-not-allowed" : ""}`;
 
   return (
     <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
       {disabled ? (
         <div className="text-sm text-gray-500 dark:text-gray-400 text-center mb-2">
-          Filters are disabled while searching. Clear the search to use filters.
+          Sorting is disabled while searching. Clear the search to use sorting.
         </div>
       ) : null}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <label
-            htmlFor="genre"
+            htmlFor="sortBy"
             className={`text-sm font-medium text-gray-700 dark:text-gray-300 ${
               disabled ? "opacity-50" : ""
             }`}
           >
-            Genre:
+            Sort by:
           </label>
           <select
-            id="genre"
-            value={currentFilters.genre}
-            onChange={(e) => handleFilterChange("genre", e.target.value)}
+            id="sortBy"
+            value={currentSort.sortBy}
+            onChange={(e) => handleSortChange("sortBy", e.target.value)}
             className={selectClassName}
             disabled={disabled}
           >
-            <option value="all">All Genres</option>
-            {genres.map((genre) => (
-              <option key={genre} value={genre}>
-                {genre}
-              </option>
-            ))}
+            <option value="title">Title</option>
+            <option value="year">Year</option>
+            <option value="rating">Rating</option>
           </select>
         </div>
 
         <div className="flex items-center gap-2">
           <label
-            htmlFor="year"
+            htmlFor="sortOrder"
             className={`text-sm font-medium text-gray-700 dark:text-gray-300 ${
               disabled ? "opacity-50" : ""
             }`}
           >
-            Year:
+            Order:
           </label>
           <select
-            id="year"
-            value={currentFilters.year}
-            onChange={(e) => handleFilterChange("year", e.target.value)}
+            id="sortOrder"
+            value={currentSort.sortOrder}
+            onChange={(e) => handleSortChange("sortOrder", e.target.value)}
             className={selectClassName}
             disabled={disabled}
           >
-            <option value="all">All Years</option>
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
           </select>
         </div>
       </div>
