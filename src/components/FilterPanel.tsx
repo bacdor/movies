@@ -42,8 +42,8 @@ export function FilterPanel({
           Filters are disabled while searching. Clear the search to use filters.
         </div>
       ) : null}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <label
             htmlFor="genre"
             className={`text-sm font-medium text-gray-700 dark:text-gray-300 ${
@@ -56,7 +56,7 @@ export function FilterPanel({
             id="genre"
             value={currentFilters.genre}
             onChange={(e) => handleFilterChange("genre", e.target.value)}
-            className={selectClassName}
+            className={`${selectClassName} w-full sm:w-auto`}
             disabled={disabled}
           >
             <option value="all">All Genres</option>
@@ -68,7 +68,7 @@ export function FilterPanel({
           </select>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <label
             htmlFor="year"
             className={`text-sm font-medium text-gray-700 dark:text-gray-300 ${
@@ -81,7 +81,7 @@ export function FilterPanel({
             id="year"
             value={currentFilters.year}
             onChange={(e) => handleFilterChange("year", e.target.value)}
-            className={selectClassName}
+            className={`${selectClassName} w-full sm:w-auto`}
             disabled={disabled}
           >
             <option value="all">All Years</option>

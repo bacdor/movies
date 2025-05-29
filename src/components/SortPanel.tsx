@@ -36,8 +36,8 @@ export function SortPanel({
           Sorting is disabled while searching. Clear the search to use sorting.
         </div>
       ) : null}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <label
             htmlFor="sortBy"
             className={`text-sm font-medium text-gray-700 dark:text-gray-300 ${
@@ -50,7 +50,7 @@ export function SortPanel({
             id="sortBy"
             value={currentSort.sortBy}
             onChange={(e) => handleSortChange("sortBy", e.target.value)}
-            className={selectClassName}
+            className={`${selectClassName} w-full sm:w-auto`}
             disabled={disabled}
           >
             <option value="title">Title</option>
@@ -59,7 +59,7 @@ export function SortPanel({
           </select>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <label
             htmlFor="sortOrder"
             className={`text-sm font-medium text-gray-700 dark:text-gray-300 ${
@@ -72,7 +72,7 @@ export function SortPanel({
             id="sortOrder"
             value={currentSort.sortOrder}
             onChange={(e) => handleSortChange("sortOrder", e.target.value)}
-            className={selectClassName}
+            className={`${selectClassName} w-full sm:w-auto`}
             disabled={disabled}
           >
             <option value="asc">Ascending</option>

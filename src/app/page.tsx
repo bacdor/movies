@@ -159,17 +159,17 @@ export default function MovieApp() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
             🎬 Movie Search & Management
           </h1>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Search and Filters */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <SearchBar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -178,7 +178,7 @@ export default function MovieApp() {
             placeholder="Search movies by title, director, or cast..."
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="flex flex-col lg:grid lg:grid-cols-2 gap-3 sm:gap-4">
             <FilterPanel
               onFilterChange={handleFilterChange}
               genres={genres}
@@ -195,12 +195,12 @@ export default function MovieApp() {
           <div className="flex justify-end">
             <button
               onClick={handleClearSearch}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white
-                       flex items-center gap-2"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white
+                       flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
+                className="h-4 w-4 sm:h-5 sm:w-5"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -217,16 +217,16 @@ export default function MovieApp() {
 
         {/* Loading State */}
         {loading && (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <div className="text-center py-6 sm:py-8">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
+            <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Loading movies...
             </p>
           </div>
         )}
 
         {/* Movies Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 mt-6 sm:mt-8">
           {movies.map((movie) => (
             <MovieCard
               key={movie.id}
@@ -237,8 +237,8 @@ export default function MovieApp() {
             />
           ))}
           {movies.length === 0 && !loading && (
-            <div className="col-span-full text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400 text-lg">
+            <div className="col-span-full text-center py-8 sm:py-12">
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                 No movies found. Try adjusting your search or filters!
               </p>
             </div>
