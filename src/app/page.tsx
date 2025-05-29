@@ -9,6 +9,7 @@ import { MovieModal } from "@/components/MovieModal";
 import { FilterPanel } from "@/components/FilterPanel";
 import { SortPanel } from "@/components/SortPanel";
 import { FavoritesList } from "@/components/FavoritesList";
+import { MovieCardSkeleton } from "@/components/MovieCardSkeleton";
 
 interface ApiResponse<T> {
   movies: T[];
@@ -259,11 +260,10 @@ export default function MovieApp() {
 
         {/* Loading State */}
         {loading && (
-          <div className="text-center py-6 sm:py-8">
-            <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
-            <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
-              Loading movies...
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 mt-6 sm:mt-8">
+            {Array.from({ length: 10 }).map((_, index) => (
+              <MovieCardSkeleton key={index} />
+            ))}
           </div>
         )}
 
