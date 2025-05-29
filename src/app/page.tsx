@@ -1,31 +1,102 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// Import your components here
-// import { MovieAPI } from '@/lib/api';
-// import { Movie } from '@/types/movie';
+import { MovieAPI } from "@/lib/api";
+import { Movie } from "@/types/movie";
+import { MovieCard } from "@/components/MovieCard";
+
+interface ApiResponse<T> {
+  movies: T[];
+  total: number;
+  filters?: {
+    query: string;
+    genre: string;
+    year: string;
+    sortBy: string;
+    sortOrder: string;
+  };
+  limit?: number;
+}
 
 export default function MovieApp() {
-  // State management - Add your state here
-  const [movies, setMovies] = useState([]);
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [favorites, setFavorites] = useState<number[]>([]);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-  // Load initial movies on component mount
+  // Load initial movies and favorites on component mount
   useEffect(() => {
-    // TODO: Load popular movies or all movies initially
-    // Example: loadPopularMovies();
+    loadInitialMovies();
+    loadFavorites();
   }, []);
 
-  // TODO: Implement search functionality
-  const handleSearch = async (query: string) => {
-    // Implement movie search using MovieAPI.searchMovies()
+  // Load favorites from localStorage
+  const loadFavorites = () => {
+    const storedFavorites = localStorage.getItem("favorites");
+    if (storedFavorites) {
+      setFavorites(JSON.parse(storedFavorites));
+    }
   };
 
-  // TODO: Implement other handlers
-  // - handleMovieClick (for movie details)
-  // - handleFavoriteToggle (for favorites)
-  // - handleFilterChange (for filtering)
+  // Save favorites to localStorage
+  const saveFavorites = (newFavorites: number[]) => {
+    localStorage.setItem("favorites", JSON.stringify(newFavorites));
+    setFavorites(newFavorites);
+  };
+
+  // Load initial movies (popular ones)
+  const loadInitialMovies = async () => {
+    try {
+      setLoading(true);
+      const response = await MovieAPI.getPopularMovies(20);
+      setMovies(response.movies);
+    } catch (error) {
+      console.error("Error loading movies:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle search
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      loadInitialMovies();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await MovieAPI.searchMovies({ query });
+      setMovies(response.movies);
+    } catch (error) {
+      console.error("Error searching movies:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle search input change with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSearch(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Handle favorite toggle
+  const handleFavoriteToggle = (movieId: number) => {
+    const newFavorites = favorites.includes(movieId)
+      ? favorites.filter((id) => id !== movieId)
+      : [...favorites, movieId];
+    saveFavorites(newFavorites);
+  };
+
+  // Handle movie click
+  const handleMovieClick = (movie: Movie) => {
+    setSelectedMovie(movie);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -53,11 +124,6 @@ export default function MovieApp() {
           </div>
         </div>
 
-        {/* Filters Section (Optional) */}
-        <div className="mb-8">
-          {/* TODO: Add genre filter, year filter, sort options */}
-        </div>
-
         {/* Loading State */}
         {loading && (
           <div className="text-center py-8">
@@ -70,7 +136,15 @@ export default function MovieApp() {
 
         {/* Movies Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {/* TODO: Map through movies and render MovieCard components */}
+          {movies.map((movie) => (
+            <MovieCard
+              key={movie.id}
+              movie={movie}
+              onMovieClick={handleMovieClick}
+              onFavoriteToggle={handleFavoriteToggle}
+              isFavorite={favorites.includes(movie.id)}
+            />
+          ))}
           {movies.length === 0 && !loading && (
             <div className="col-span-full text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 text-lg">
@@ -81,8 +155,124 @@ export default function MovieApp() {
         </div>
       </main>
 
-      {/* Movie Detail Modal (Optional) */}
-      {/* TODO: Add modal for movie details */}
+      {/* Movie Detail Modal */}
+      {selectedMovie && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {selectedMovie.title}
+                </h2>
+                <button
+                  onClick={() => setSelectedMovie(null)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="relative aspect-[2/3] w-full">
+                  <img
+                    src={selectedMovie.poster}
+                    alt={`${selectedMovie.title} poster`}
+                    className="rounded-lg object-cover w-full h-full"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Details
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      {selectedMovie.description}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Info
+                    </h3>
+                    <dl className="grid grid-cols-2 gap-2 text-sm">
+                      <dt className="text-gray-500 dark:text-gray-400">Year</dt>
+                      <dd className="text-gray-900 dark:text-white">
+                        {selectedMovie.year}
+                      </dd>
+
+                      <dt className="text-gray-500 dark:text-gray-400">
+                        Director
+                      </dt>
+                      <dd className="text-gray-900 dark:text-white">
+                        {selectedMovie.director}
+                      </dd>
+
+                      <dt className="text-gray-500 dark:text-gray-400">
+                        Runtime
+                      </dt>
+                      <dd className="text-gray-900 dark:text-white">
+                        {selectedMovie.runtime} minutes
+                      </dd>
+
+                      <dt className="text-gray-500 dark:text-gray-400">
+                        Rating
+                      </dt>
+                      <dd className="text-gray-900 dark:text-white">
+                        {selectedMovie.rating.toFixed(1)}
+                      </dd>
+                    </dl>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Genres
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedMovie.genre.map((genre) => (
+                        <span
+                          key={genre}
+                          className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-sm"
+                        >
+                          {genre}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Cast
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedMovie.cast.map((actor) => (
+                        <span
+                          key={actor}
+                          className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-full text-sm"
+                        >
+                          {actor}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

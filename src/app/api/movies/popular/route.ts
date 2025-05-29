@@ -1,35 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { MovieAPI } from '@/lib/api';
+import { NextRequest, NextResponse } from "next/server";
+import { MovieService } from "@/lib/server/movieService";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    
-    // Get limit parameter, default to 6
-    const limitParam = searchParams.get('limit');
-    const limit = limitParam ? parseInt(limitParam) : 6;
-    
-    // Validate limit
-    if (isNaN(limit) || limit < 1 || limit > 50) {
+    const limit = parseInt(searchParams.get("limit") || "10");
+
+    if (isNaN(limit) || limit < 1) {
       return NextResponse.json(
-        { error: 'Invalid limit parameter. Must be between 1 and 50.' },
+        { error: "Invalid limit parameter" },
         { status: 400 }
       );
     }
-    
-    // Get popular movies
-    const movies = await MovieAPI.getPopularMovies(limit);
-    
+
+    const movies = await MovieService.getPopularMovies(limit);
     return NextResponse.json({
       movies,
       total: movies.length,
-      limit
+      limit,
     });
   } catch (error) {
-    console.error('Error fetching popular movies:', error);
+    console.error("Error fetching popular movies:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch popular movies' },
+      { error: "Failed to fetch popular movies" },
       { status: 500 }
     );
   }
-} 
+}
