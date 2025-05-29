@@ -92,10 +92,20 @@ export default function MovieApp() {
     }
   };
 
+  // Handle sort changes
+  const handleSortChange = (
+    sortOptions: Pick<SearchFilters, "sortBy" | "sortOrder">
+  ) => {
+    setCurrentSort(sortOptions);
+    // Remove automatic search trigger
+  };
+
   // Handle search with current filters and sort
-  const handleSearch = async () => {
+  const handleSearch = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       let response;
 
       // If there's a search query, only use that
@@ -124,7 +134,9 @@ export default function MovieApp() {
     } catch (error) {
       console.error("Error searching movies:", error);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -133,13 +145,6 @@ export default function MovieApp() {
     filters: Pick<SearchFilters, "genre" | "year">
   ) => {
     setCurrentFilters(filters);
-  };
-
-  // Handle sort changes
-  const handleSortChange = (
-    sortOptions: Pick<SearchFilters, "sortBy" | "sortOrder">
-  ) => {
-    setCurrentSort(sortOptions);
   };
 
   // Handle clear search and filters
